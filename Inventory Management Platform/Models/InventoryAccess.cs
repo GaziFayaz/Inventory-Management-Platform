@@ -7,10 +7,10 @@ namespace Inventory_Management_Platform.Models;
 /// </summary>
 public class InventoryAccess
 {
-    public Guid InventoryId { get; set; }
-    public string UserId { get; set; } = string.Empty;
+  public Guid InventoryId { get; set; }
+  public string UserId { get; set; } = string.Empty;
 
-    // Navigation
-    public Inventory Inventory { get; set; } = null!;
-    public AppUser User { get; set; } = null!;
+  // Navigation
+  public Inventory Inventory { get; set; } = null!;
+  public AppUser User { get; set; } = null!;
 }

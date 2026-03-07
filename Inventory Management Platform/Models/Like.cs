@@ -5,10 +5,10 @@ namespace Inventory_Management_Platform.Models;
 /// </summary>
 public class Like
 {
-    public Guid ItemId { get; set; }
-    public string UserId { get; set; } = string.Empty;
+  public Guid ItemId { get; set; }
+  public string UserId { get; set; } = string.Empty;
 
-    // Navigation
-    public Item Item { get; set; } = null!;
-    public AppUser User { get; set; } = null!;
+  // Navigation
+  public Item Item { get; set; } = null!;
+  public AppUser User { get; set; } = null!;
 }
