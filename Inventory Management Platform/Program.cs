@@ -1,4 +1,5 @@
 using Inventory_Management_Platform.Data;
+using Inventory_Management_Platform.Data.Seeder;
 using Inventory_Management_Platform.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -21,7 +22,15 @@ builder.Services.AddIdentity<AppUser, IdentityRole>()
     .AddEntityFrameworkStores<AppDbContext>()
     .AddDefaultTokenProviders();
 
+builder.Services.AddAuthorization();
+
 var app = builder.Build();
+
+// Seed admin role and user on every startup (idempotent — skips if already exists).
+using (var scope = app.Services.CreateScope())
+{
+    await AdminSeeder.SeedAsync(scope.ServiceProvider);
+}
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
