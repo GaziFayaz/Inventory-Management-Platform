@@ -1,4 +1,3 @@
-using Inventory_Management_Platform.Common;
 using Inventory_Management_Platform.Common.Errors;
 using Inventory_Management_Platform.Data;
 using Inventory_Management_Platform.Data.Seeder;
@@ -16,6 +15,7 @@ if (builder.Environment.IsDevelopment())
 // Add services to the container.
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
+builder.Services.AddControllers();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddProblemDetails();
 
@@ -49,7 +49,6 @@ app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
 
-app.MapGet("/health", () => Results.Ok(ApiResponse.Ok(new { timeUtc = DateTime.UtcNow })))
-    .WithName("HealthCheck");
+app.MapControllers();
 
 app.Run();
