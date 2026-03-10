@@ -1,7 +1,9 @@
+using Inventory_Management_Platform.Common.Authorization;
 using Inventory_Management_Platform.Common.Errors;
 using Inventory_Management_Platform.Data;
 using Inventory_Management_Platform.Data.Seeder;
 using Inventory_Management_Platform.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
@@ -26,7 +28,27 @@ builder.Services.AddIdentity<AppUser, IdentityRole>()
     .AddEntityFrameworkStores<AppDbContext>()
     .AddDefaultTokenProviders();
 
-builder.Services.AddAuthorization();
+builder.Services.AddAuthorizationBuilder()
+    .AddPolicy("Admin", p => p
+        .RequireRole("Admin"))
+    .AddPolicy("Authenticated", p => p
+        .RequireAuthenticatedUser()
+        .AddRequirements(new NotBlockedRequirement()))
+    .AddPolicy("OwnerOrAdmin", p => p
+        .RequireAuthenticatedUser()
+        .AddRequirements(
+            new NotBlockedRequirement(),
+            new InventoryOwnerOrAdminRequirement()))
+    .AddPolicy("InventoryWrite", p => p
+        .RequireAuthenticatedUser()
+        .AddRequirements(
+            new NotBlockedRequirement(),
+            new InventoryWriteRequirement()));
+
+builder.Services.AddScoped<IAuthorizationHandler, NotBlockedHandler>();
+builder.Services.AddScoped<IAuthorizationHandler, InventoryOwnerOrAdminHandler>();
+builder.Services.AddScoped<IAuthorizationHandler, InventoryWriteHandler>();
+builder.Services.AddSingleton<IAuthorizationMiddlewareResultHandler, AuthorizationResultHandler>();
 
 var app = builder.Build();
 
