@@ -20,4 +20,13 @@ public static class ErrorCodes
     // ── Conflict / Concurrency ───────────────────────────────────────────────
     public const string OptimisticLock     = "conflict.optimistic_lock";
     public const string CustomIdDuplicate  = "item.custom_id_duplicate";
+
+    // ── Auth / Social ────────────────────────────────────────────────────────
+    public const string AuthProviderFailed = "auth.provider_failed";
+
+    // ── User ─────────────────────────────────────────────────────────────────
+    public const string UserNotFound       = "user.not_found";
+
+    // ── Admin ────────────────────────────────────────────────────────────────
+    public const string CannotDeleteSelf   = "admin.cannot_delete_self";
 }
