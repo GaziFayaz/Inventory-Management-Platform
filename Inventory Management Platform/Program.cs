@@ -52,13 +52,13 @@ builder.Services
         options.ClientId = builder.Configuration["Authentication:Google:ClientId"]!;
         options.ClientSecret = builder.Configuration["Authentication:Google:ClientSecret"]!;
         options.CallbackPath = "/auth/callback/google";
-    })
-    .AddFacebook(options =>
-    {
-        options.AppId = builder.Configuration["Authentication:Facebook:AppId"]!;
-        options.AppSecret = builder.Configuration["Authentication:Facebook:AppSecret"]!;
-        options.CallbackPath = "/auth/callback/facebook";
     });
+    // .AddFacebook(options =>
+    // {
+    //     options.AppId = builder.Configuration["Authentication:Facebook:AppId"]!;
+    //     options.AppSecret = builder.Configuration["Authentication:Facebook:AppSecret"]!;
+    //     options.CallbackPath = "/auth/callback/facebook";
+    // });
 
 builder.Services.AddAuthorizationBuilder()
     .AddPolicy("Admin", p => p
