@@ -24,8 +24,8 @@ public sealed class GlobalExceptionHandler(
     var (status, message, errorCode) = exception switch
     {
       AppException ex => (ex.StatusCode, ex.Message, ex.ErrorCode),
-      DbUpdateConcurrencyException => (409, "A conflicting update occurred. Please retry.", "conflict.optimistic_lock"),
-      _ => (500, "An unexpected error occurred.", "server_error")
+      DbUpdateConcurrencyException => (409, "A conflicting update occurred. Please retry.", ErrorCodes.OptimisticLock),
+      _ => (500, "An unexpected error occurred.", ErrorCodes.ServerError)
     };
 
     if (status >= 500)

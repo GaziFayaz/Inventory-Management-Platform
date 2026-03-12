@@ -1,7 +1,11 @@
+using Inventory_Management_Platform.Common.Authorization;
 using Inventory_Management_Platform.Common.Errors;
 using Inventory_Management_Platform.Data;
 using Inventory_Management_Platform.Data.Seeder;
+using Inventory_Management_Platform.Features.Admin;
+using Inventory_Management_Platform.Features.Auth;
 using Inventory_Management_Platform.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
@@ -19,14 +23,67 @@ builder.Services.AddControllers();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddProblemDetails();
 
-var connectionString = builder.Configuration.GetConnectionString(("DefaultConnection"));
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 builder.Services.AddDbContext<AppDbContext>(options => options.UseNpgsql(connectionString));
 
 builder.Services.AddIdentity<AppUser, IdentityRole>()
     .AddEntityFrameworkStores<AppDbContext>()
     .AddDefaultTokenProviders();
 
-builder.Services.AddAuthorization();
+// Return JSON 401/403 for API clients instead of browser redirects.
+builder.Services.ConfigureApplicationCookie(options =>
+{
+    options.Events.OnRedirectToLogin = ctx =>
+    {
+        ctx.Response.StatusCode = StatusCodes.Status401Unauthorized;
+        return Task.CompletedTask;
+    };
+    options.Events.OnRedirectToAccessDenied = ctx =>
+    {
+        ctx.Response.StatusCode = StatusCodes.Status403Forbidden;
+        return Task.CompletedTask;
+    };
+});
+
+builder.Services
+    .AddAuthentication()
+    .AddGoogle(options =>
+    {
+        options.ClientId = builder.Configuration["Authentication:Google:ClientId"]!;
+        options.ClientSecret = builder.Configuration["Authentication:Google:ClientSecret"]!;
+        options.CallbackPath = "/auth/callback/google";
+    })
+    .AddFacebook(options =>
+    {
+        options.AppId = builder.Configuration["Authentication:Facebook:AppId"]!;
+        options.AppSecret = builder.Configuration["Authentication:Facebook:AppSecret"]!;
+        options.CallbackPath = "/auth/callback/facebook";
+    });
+
+builder.Services.AddAuthorizationBuilder()
+    .AddPolicy("Admin", p => p
+        .RequireRole("Admin"))
+    .AddPolicy("Authenticated", p => p
+        .RequireAuthenticatedUser()
+        .AddRequirements(new NotBlockedRequirement()))
+    .AddPolicy("OwnerOrAdmin", p => p
+        .RequireAuthenticatedUser()
+        .AddRequirements(
+            new NotBlockedRequirement(),
+            new InventoryOwnerOrAdminRequirement()))
+    .AddPolicy("InventoryWrite", p => p
+        .RequireAuthenticatedUser()
+        .AddRequirements(
+            new NotBlockedRequirement(),
+            new InventoryWriteRequirement()));
+
+builder.Services.AddScoped<IAuthorizationHandler, NotBlockedHandler>();
+builder.Services.AddScoped<IAuthorizationHandler, InventoryOwnerOrAdminHandler>();
+builder.Services.AddScoped<IAuthorizationHandler, InventoryWriteHandler>();
+builder.Services.AddSingleton<IAuthorizationMiddlewareResultHandler, AuthorizationResultHandler>();
+
+builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IAdminUserService, AdminUserService>();
 
 var app = builder.Build();
 
