@@ -60,6 +60,9 @@ builder.Services.AddIdentity<AppUser, IdentityRole>()
 // Return JSON 401/403 for API clients instead of browser redirects.
 builder.Services.ConfigureApplicationCookie(options =>
 {
+    options.Cookie.SameSite = SameSiteMode.None;
+    options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+
     options.Events.OnRedirectToLogin = ctx =>
     {
         ctx.Response.StatusCode = StatusCodes.Status401Unauthorized;
