@@ -126,6 +126,13 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
 }
 
+// Force HTTPS scheme so OAuth generates https:// callback URLs
+app.Use((context, next) =>
+{
+    context.Request.Scheme = "https";
+    return next();
+});
+
 app.UseExceptionHandler();
 app.UseStatusCodePages();
 app.UseHttpsRedirection();
