@@ -8,19 +8,25 @@ using Microsoft.AspNetCore.Identity;
 namespace Inventory_Management_Platform.Features.Auth;
 
 public sealed class AuthService(
-    UserManager<AppUser>   userManager,
+    UserManager<AppUser> userManager,
     SignInManager<AppUser> signInManager,
-    IConfiguration         configuration) : IAuthService
+    IConfiguration configuration) : IAuthService
 {
-    private static readonly HashSet<string> SupportedProviders =
-        new(StringComparer.OrdinalIgnoreCase) { "google", "facebook" };
+    private static readonly string[] SupportedProviders = [
+        "Google", "Facebook"
+    ];
 
     public AuthenticationProperties BuildLoginProperties(string provider, string callbackUrl)
     {
         if (!SupportedProviders.Contains(provider))
             throw new AppException(400, $"Unsupported provider '{provider}'.", ErrorCodes.Fallback);
 
-        return signInManager.ConfigureExternalAuthenticationProperties(provider, callbackUrl);
+        var properties = signInManager.ConfigureExternalAuthenticationProperties(provider, callbackUrl);
+
+        if (provider == "Google")
+            properties.SetParameter("prompt", "select_account");
+
+        return properties;
     }
     public async Task<string> ProcessExternalCallbackAsync()
     {
@@ -48,15 +54,14 @@ public sealed class AuthService(
         if (string.IsNullOrWhiteSpace(email))
             return $"{frontendUrl}?error={ErrorCodes.AuthProviderFailed}";
 
-        var displayName = info.Principal.FindFirstValue(ClaimTypes.Name)
-                          ?? email[..email.IndexOf('@')];
+        var displayName = info.Principal.FindFirstValue(ClaimTypes.Name) ?? email[..email.IndexOf('@')];
 
         var user = new AppUser
         {
-            UserName    = email,
-            Email       = email,
+            UserName = email,
+            Email = email,
             DisplayName = displayName,
-            CreatedAt   = DateTime.UtcNow
+            CreatedAt = DateTime.UtcNow
         };
 
         var createResult = await userManager.CreateAsync(user);
