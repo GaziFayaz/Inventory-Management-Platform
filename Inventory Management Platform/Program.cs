@@ -6,7 +6,6 @@ using Inventory_Management_Platform.Features.Admin;
 using Inventory_Management_Platform.Features.Auth;
 using Inventory_Management_Platform.Models;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
@@ -113,17 +112,6 @@ builder.Services.AddSingleton<IAuthorizationMiddlewareResultHandler, Authorizati
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IAdminUserService, AdminUserService>();
 
-builder.Services.Configure<ForwardedHeadersOptions>(options =>
-{
-    options.ForwardedHeaders =
-        ForwardedHeaders.XForwardedFor |
-        ForwardedHeaders.XForwardedProto |
-        ForwardedHeaders.XForwardedHost;
-
-    options.KnownIPNetworks.Clear();
-    options.KnownProxies.Clear();
-});
-
 var app = builder.Build();
 
 // Seed admin role and user on every startup (idempotent — skips if already exists).
@@ -140,7 +128,6 @@ if (app.Environment.IsDevelopment())
 
 app.UseExceptionHandler();
 app.UseStatusCodePages();
-app.UseForwardedHeaders();
 app.UseHttpsRedirection();
 app.UseCors("Frontend");
 
