@@ -23,6 +23,33 @@ builder.Services.AddControllers();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddProblemDetails();
 
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("Frontend", policy =>
+    {
+        var origins = new List<string>();
+        var frontendUrl = builder.Configuration["FrontendUrl"];
+
+        if (!string.IsNullOrWhiteSpace(frontendUrl))
+            origins.Add(frontendUrl);
+
+        if (builder.Environment.IsDevelopment())
+        {
+            origins.Add("http://localhost:5173");
+            origins.Add("https://localhost:5173");
+        }
+
+        if (origins.Count == 0)
+            origins.Add("http://localhost:3000");
+
+        policy
+            .WithOrigins(origins.Distinct().ToArray())
+            .AllowAnyHeader()
+            .AllowAnyMethod()
+            .AllowCredentials();
+    });
+});
+
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 builder.Services.AddDbContext<AppDbContext>(options => options.UseNpgsql(connectionString));
 
@@ -102,6 +129,7 @@ if (app.Environment.IsDevelopment())
 app.UseExceptionHandler();
 app.UseStatusCodePages();
 app.UseHttpsRedirection();
+app.UseCors("Frontend");
 
 app.UseAuthentication();
 app.UseAuthorization();

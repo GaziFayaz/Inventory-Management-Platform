@@ -8,7 +8,7 @@ namespace Inventory_Management_Platform.Features.Auth;
 public interface IAuthService
 {
     /// <summary>
-    /// Validates the provider name and builds the OAuth challenge properties.
+    /// Validates the provider name and builds the OAuth challenge tuple.
     /// </summary>
     /// <exception cref="Common.Errors.AppException">Thrown when the provider is not supported.</exception>
     AuthenticationProperties BuildLoginProperties(string provider, string callbackUrl);
