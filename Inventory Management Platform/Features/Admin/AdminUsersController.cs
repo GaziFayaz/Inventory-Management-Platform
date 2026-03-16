@@ -24,46 +24,44 @@ public sealed class AdminUsersController(
         return Ok(ApiResponse.Ok(result));
     }
 
-    // ── PUT /admin/users/{id}/block ─────────────────────────────────────────
-    [HttpPut("block/{id}")]
-    public async Task<IActionResult> BlockUser(string id)
+    // ── PUT /admin/users/block ──────────────────────────────────────────────
+    [HttpPut("block")]
+    public async Task<IActionResult> BlockUsers([FromBody] List<string> userIds)
     {
-        var dto = await adminUserService.BlockUserAsync(id, userManager.GetUserId(User)!);
-        return Ok(ApiResponse.Ok(dto));
+        var dtos = await adminUserService.BlockUsersAsync(userIds, userManager.GetUserId(User)!);
+        return Ok(ApiResponse.Ok(dtos));
     }
 
-    // ── PUT /admin/users/{id}/unblock ───────────────────────────────────────
-    [HttpPut("unblock/{id}")]
-    public async Task<IActionResult> UnblockUser(string id)
+    // ── PUT /admin/users/unblock ────────────────────────────────────────────
+    [HttpPut("unblock")]
+    public async Task<IActionResult> UnblockUsers([FromBody] List<string> userIds)
     {
-        var dto = await adminUserService.UnblockUserAsync(id);
-        return Ok(ApiResponse.Ok(dto));
+        var dtos = await adminUserService.UnblockUsersAsync(userIds);
+        return Ok(ApiResponse.Ok(dtos));
     }
 
-    // ── DELETE /admin/users/{id} ────────────────────────────────────────────
-    [HttpDelete("{id}")]
-    public async Task<IActionResult> DeleteUser(string id)
+    // ── DELETE /admin/users ─────────────────────────────────────────────────
+    [HttpDelete]
+    public async Task<IActionResult> DeleteUsers([FromBody] List<string> userIds)
     {
-        await adminUserService.DeleteUserAsync(id, userManager.GetUserId(User)!);
+        await adminUserService.DeleteUsersAsync(userIds, userManager.GetUserId(User)!);
         return Ok(ApiResponse.Ok<object>(null!));
     }
 
-    // ── POST /admin/users/{id}/roles/admin ──────────────────────────────────
-    [HttpPost("roles/admin/{id}")]
-    public async Task<IActionResult> PromoteToAdmin(string id)
+    // ── POST /admin/users/roles/admin ───────────────────────────────────────
+    [HttpPost("roles/admin")]
+    public async Task<IActionResult> PromoteToAdmins([FromBody] List<string> userIds)
     {
-        var dto = await adminUserService.PromoteToAdminAsync(id);
-        return Ok(ApiResponse.Ok(dto));
+        var dtos = await adminUserService.PromoteToAdminsAsync(userIds);
+        return Ok(ApiResponse.Ok(dtos));
     }
 
-    // ── DELETE /admin/users/{id}/roles/admin ────────────────────────────────
+    // ── DELETE /admin/users/roles/admin ─────────────────────────────────────
     // Self-demotion is explicitly allowed per spec.
-    [HttpDelete("roles/admin/{id}")]
-    public async Task<IActionResult> DemoteFromAdmin(string id)
+    [HttpDelete("roles/admin")]
+    public async Task<IActionResult> DemoteFromAdmins([FromBody] List<string> userIds)
     {
-        var dto = await adminUserService.DemoteFromAdminAsync(id);
-        return Ok(ApiResponse.Ok(dto));
+        var dtos = await adminUserService.DemoteFromAdminsAsync(userIds);
+        return Ok(ApiResponse.Ok(dtos));
     }
-
-    // ── Helpers ─────────────────────────────────────────────────────────────
 }

@@ -8,15 +8,15 @@ public interface IAdminUserService
     Task<UserListResponse> ListUsersAsync(int page, int pageSize, string? search);
 
     /// <param name="currentUserId">The acting admin's ID — prevents self-block.</param>
-    Task<UserDto> BlockUserAsync(string id, string currentUserId);
+    Task<List<UserDto>> BlockUsersAsync(List<string> ids, string currentUserId);
 
-    Task<UserDto> UnblockUserAsync(string id);
+    Task<List<UserDto>> UnblockUsersAsync(List<string> ids);
 
     /// <param name="currentUserId">The acting admin's ID — prevents self-delete.</param>
-    Task DeleteUserAsync(string id, string currentUserId);
+    Task DeleteUsersAsync(List<string> ids, string currentUserId);
 
-    Task<UserDto> PromoteToAdminAsync(string id);
+    Task<List<UserDto>> PromoteToAdminsAsync(List<string> ids);
 
     /// <summary>Self-demotion is explicitly allowed.</summary>
-    Task<UserDto> DemoteFromAdminAsync(string id);
+    Task<List<UserDto>> DemoteFromAdminsAsync(List<string> ids);
 }

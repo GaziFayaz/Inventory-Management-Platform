@@ -2,12 +2,13 @@ using Inventory_Management_Platform.Common.Errors;
 using Inventory_Management_Platform.Contracts.Admin;
 using Inventory_Management_Platform.Contracts.Auth;
 using Inventory_Management_Platform.Models;
+using Inventory_Management_Platform.Data;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
 namespace Inventory_Management_Platform.Features.Admin;
 
-public sealed class AdminUserService(UserManager<AppUser> userManager) : IAdminUserService
+public sealed class AdminUserService(UserManager<AppUser> userManager, AppDbContext dbContext) : IAdminUserService
 {
     private const int MaxPageSize = 100;
 
@@ -52,76 +53,102 @@ public sealed class AdminUserService(UserManager<AppUser> userManager) : IAdminU
         return new UserListResponse(items, page, pageSize, totalCount);
     }
 
-    public async Task<UserDto> BlockUserAsync(string id, string currentUserId)
+    public async Task<List<UserDto>> BlockUsersAsync(List<string> ids, string currentUserId)
     {
-        if (id == currentUserId)
+        if (ids.Contains(currentUserId))
             throw new AppException(400, "You cannot block your own account.", ErrorCodes.Forbidden);
 
-        var user = await LoadUserOrThrowAsync(id);
-        user.IsBlocked = true;
-        await userManager.UpdateAsync(user);
+        var users = await LoadUsersOrThrowAsync(ids);
+        
+        foreach (var user in users)
+        {
+            user.IsBlocked = true;
+            await userManager.UpdateAsync(user);
+            await userManager.UpdateSecurityStampAsync(user);
+        }
 
-        return await BuildUserDtoAsync(user);
+        return await BuildUserDtosAsync(users);
     }
 
-    public async Task<UserDto> UnblockUserAsync(string id)
+    public async Task<List<UserDto>> UnblockUsersAsync(List<string> ids)
     {
-        var user = await LoadUserOrThrowAsync(id);
-        user.IsBlocked = false;
-        await userManager.UpdateAsync(user);
+        var users = await LoadUsersOrThrowAsync(ids);
 
-        return await BuildUserDtoAsync(user);
+        foreach (var user in users)
+        {
+            user.IsBlocked = false;
+            await userManager.UpdateAsync(user);
+        }
+
+        return await BuildUserDtosAsync(users);
     }
 
-    public async Task DeleteUserAsync(string id, string currentUserId)
+    public async Task DeleteUsersAsync(List<string> ids, string currentUserId)
     {
-        if (id == currentUserId)
+        if (ids.Contains(currentUserId))
             throw new AppException(400, "You cannot delete your own account.", ErrorCodes.CannotDeleteSelf);
 
-        var user = await LoadUserOrThrowAsync(id);
-        await userManager.DeleteAsync(user);
+        var users = await LoadUsersOrThrowAsync(ids);
+        
+        foreach (var user in users)
+        {
+            await userManager.DeleteAsync(user);
+        }
     }
 
-    public async Task<UserDto> PromoteToAdminAsync(string id)
+    public async Task<List<UserDto>> PromoteToAdminsAsync(List<string> ids)
     {
-        var user = await LoadUserOrThrowAsync(id);
+        var users = await LoadUsersOrThrowAsync(ids);
 
-        if (!await userManager.IsInRoleAsync(user, "Admin"))
+        foreach (var user in users)
+        {
             await userManager.AddToRoleAsync(user, "Admin");
+        }
 
-        return await BuildUserDtoAsync(user);
+        return await BuildUserDtosAsync(users);
     }
 
-    public async Task<UserDto> DemoteFromAdminAsync(string id)
+    public async Task<List<UserDto>> DemoteFromAdminsAsync(List<string> ids)
     {
-        var user = await LoadUserOrThrowAsync(id);
+        var users = await LoadUsersOrThrowAsync(ids);
 
-        if (await userManager.IsInRoleAsync(user, "Admin"))
+        foreach (var user in users)
+        {
             await userManager.RemoveFromRoleAsync(user, "Admin");
+        }
 
-        return await BuildUserDtoAsync(user);
+        return await BuildUserDtosAsync(users);
     }
 
-    // ── Private helpers ─────────────────────────────────────────────────────
-
-    private async Task<AppUser> LoadUserOrThrowAsync(string id)
+    private async Task<List<AppUser>> LoadUsersOrThrowAsync(List<string> ids)
     {
-        var user = await userManager.FindByIdAsync(id);
-        if (user is null)
-            throw new AppException(404, "User not found.", ErrorCodes.UserNotFound);
-        return user;
+        if (ids is null || ids.Count == 0)
+            return [];
+
+        var distinctIds = ids.Distinct().ToList();
+        var users = await userManager.Users
+            .Where(u => distinctIds.Contains(u.Id))
+            .ToListAsync();
+            
+        if (users.Count != distinctIds.Count)
+            throw new AppException(404, "One or more users not found.", ErrorCodes.UserNotFound);
+            
+        return users;
     }
 
-    private async Task<UserDto> BuildUserDtoAsync(AppUser user)
+    private async Task<List<UserDto>> BuildUserDtosAsync(List<AppUser> users)
     {
-        var isAdmin = await userManager.IsInRoleAsync(user, "Admin");
-        return new UserDto(
+        var adminIds = (await userManager.GetUsersInRoleAsync("Admin"))
+            .Select(u => u.Id)
+            .ToHashSet();
+
+        return users.Select(user => new UserDto(
             user.Id,
             user.DisplayName,
             user.Email!,
-            isAdmin,
+            adminIds.Contains(user.Id),
             user.IsBlocked,
             user.CreatedAt
-        );
+        )).ToList();
     }
 }
