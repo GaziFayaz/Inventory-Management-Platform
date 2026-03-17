@@ -324,17 +324,20 @@ Creates an inventory owned by the current user.
 
 **Auth policy:** `"Authenticated"`
 
-**Request body**
-```json
-{
-  "title": "Office Laptops",
-  "descriptionMd": "Markdown description",
-  "imageUrl": "https://example.com/image.png",
-  "categoryId": 1,
-  "isPublic": false,
-  "tagNames": ["hardware", "office"]
-}
-```
+**Content-Type:** `multipart/form-data`
+
+**Form fields**
+
+| Name | Type | Required | Description |
+|---|---|---|---|
+| `title` | `string` | Yes | Inventory title |
+| `descriptionMd` | `string?` | No | Markdown description |
+| `imageFile` | `file?` | No | Uploaded image file |
+| `categoryId` | `int?` | No | Category ID |
+| `isPublic` | `bool` | Yes | Public/private write access toggle |
+| `tagNames` | `string[]` | No | Repeat field for multiple tags |
+
+When `imageFile` is provided, backend uploads it to Cloudinary and stores the resulting URL in `imageUrl`.
 
 **Success response:** `201 Created` with inventory DTO.
 
@@ -361,7 +364,7 @@ Returns paginated inventories. Optional owner filter.
 |---|---|---|---|
 | `ownerId` | `string?` | — | Return only inventories owned by this user |
 | `page` | `int` | `1` | 1-based page number |
-| `pageSize` | `int` | `20` | Clamped to `[1, 100]` |
+| `pageSize` | `int` | `20` | Number of rows to return |
 
 **Success response:** paged `InventoryDto[]` in `data.items`.
 
@@ -378,6 +381,74 @@ Returns one inventory by ID.
 | Condition | Status | `errorCode` |
 |---|---|---|
 | Inventory not found | 404 | `inventory.not_found` |
+
+---
+
+### `GET /inventories/{id}/access`
+
+Returns current write-access email list and latest optimistic-lock version.
+
+**Auth policy:** `"OwnerOrAdmin"` (resource-based)
+
+**Success response:** `InventoryAccessResponse`
+
+**Error responses**
+
+| Condition | Status | `errorCode` |
+|---|---|---|
+| Inventory not found | 404 | `inventory.not_found` |
+| Not owner/admin | 403 | `auth.forbidden` |
+
+---
+
+### `GET /inventories/{id}/fields`
+
+Returns inventory custom-field definitions.
+
+**Auth policy:** none (anonymous)
+
+**Success response:** `InventoryCustomFieldsResponse`
+
+**Error responses**
+
+| Condition | Status | `errorCode` |
+|---|---|---|
+| Inventory not found | 404 | `inventory.not_found` |
+
+---
+
+### `PUT /inventories/{id}/fields`
+
+Replaces custom-field definitions with optimistic locking.
+
+**Auth policy:** `"OwnerOrAdmin"` (resource-based)
+
+**Request body**
+```json
+{
+  "fields": [
+    {
+      "type": "String",
+      "slot": 1,
+      "enabled": true,
+      "title": "Serial",
+      "description": "Serial number",
+      "showInTable": true,
+      "orderIndex": 1
+    }
+  ],
+  "version": 12345
+}
+```
+
+**Error responses**
+
+| Condition | Status | `errorCode` |
+|---|---|---|
+| Inventory not found | 404 | `inventory.not_found` |
+| Duplicate `(type, slot)` or invalid slot | 400 | `error` |
+| Stale version (optimistic lock) | 409 | `conflict.optimistic_lock` |
+| Not owner/admin | 403 | `auth.forbidden` |
 
 ---
 
@@ -497,3 +568,7 @@ Deletes an inventory (cascade rules handle dependents).
 | `Authentication:Google:ClientSecret` | User secrets / env | Google OAuth client secret |
 | `Authentication:Facebook:AppId` | User secrets / env | Facebook OAuth app ID |
 | `Authentication:Facebook:AppSecret` | User secrets / env | Facebook OAuth app secret |
+| `Cloudinary:CloudName` | User secrets / env | Cloudinary cloud name |
+| `Cloudinary:ApiKey` | User secrets / env | Cloudinary API key |
+| `Cloudinary:ApiSecret` | User secrets / env | Cloudinary API secret |
+| `Cloudinary:Folder` | appsettings / env | Cloudinary target folder for inventory images |

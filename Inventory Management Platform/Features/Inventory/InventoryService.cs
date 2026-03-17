@@ -9,7 +9,8 @@ namespace Inventory_Management_Platform.Features.Inventory;
 
 public sealed class InventoryService(
     AppDbContext dbContext,
-    UserManager<AppUser> userManager) : IInventoryService
+    UserManager<AppUser> userManager,
+    IImageStorageService imageStorageService) : IInventoryService
 {
     public async Task<InventoryDto> CreateAsync(string ownerId, CreateInventoryRequest request)
     {
@@ -26,13 +27,18 @@ public sealed class InventoryService(
         }
 
         var now = DateTime.UtcNow;
+        string? imageUrl = null;
+
+        if (request.ImageFile is not null)
+            imageUrl = await imageStorageService.UploadImageAsync(request.ImageFile);
+
         var inventory = new Models.Inventory
         {
             Id = Guid.NewGuid(),
             OwnerId = ownerId,
-            Title = request.Title,
+            Title = request.Title.Trim(),
             DescriptionMd = request.DescriptionMd,
-            ImageUrl = request.ImageUrl,
+            ImageUrl = imageUrl,
             CategoryId = request.CategoryId,
             IsPublic = request.IsPublic,
             CreatedAt = now

@@ -92,17 +92,20 @@ Creates a new inventory owned by the current user.
 
 **Auth:** `Authenticated`
 
-**Request**
-```json
-{
-  "title": "Office Assets",
-  "descriptionMd": "Markdown text",
-  "imageUrl": "https://cdn.example.com/img.png",
-  "categoryId": 1,
-  "isPublic": false,
-  "tagNames": ["office", "assets"]
-}
-```
+**Content-Type:** `multipart/form-data`
+
+**Form fields**
+
+| Name | Type | Required | Description |
+|---|---|---|---|
+| `title` | `string` | Yes | Inventory title |
+| `descriptionMd` | `string?` | No | Markdown description |
+| `imageFile` | `file?` | No | Image file uploaded to Cloudinary |
+| `categoryId` | `int?` | No | Category ID |
+| `isPublic` | `bool` | Yes | Public/private write access toggle |
+| `tagNames` | `string[]` | No | Repeat key for multiple tags |
+
+If `imageFile` is present, backend uploads it to Cloudinary and persists the returned secure URL to `imageUrl`.
 
 **Success:** `201` with `InventoryDto`
 
@@ -308,3 +311,24 @@ Deletes inventory. Dependent rows are handled by DB cascade rules.
 - On `409 conflict.optimistic_lock`, refetch resource and retry with fresh version.
 - `PUT` endpoints in this feature are modeled as replacement-style updates.
 - Access list endpoints identify users by email (not user id).
+
+---
+
+## Cloudinary Setup (Step-by-step)
+
+1. Create or sign in to a Cloudinary account.
+2. Open Cloudinary Dashboard and copy:
+  - Cloud name
+  - API Key
+  - API Secret
+3. Configure secrets for this backend project:
+
+```powershell
+dotnet user-secrets set "Cloudinary:CloudName" "<YOUR_CLOUD_NAME>" --project ".\Inventory Management Platform\Inventory Management Platform.csproj"
+dotnet user-secrets set "Cloudinary:ApiKey" "<YOUR_API_KEY>" --project ".\Inventory Management Platform\Inventory Management Platform.csproj"
+dotnet user-secrets set "Cloudinary:ApiSecret" "<YOUR_API_SECRET>" --project ".\Inventory Management Platform\Inventory Management Platform.csproj"
+dotnet user-secrets set "Cloudinary:Folder" "inventories" --project ".\Inventory Management Platform\Inventory Management Platform.csproj"
+```
+
+4. Restart backend so new configuration is loaded.
+5. Send `POST /inventories` as `multipart/form-data` including `imageFile`.

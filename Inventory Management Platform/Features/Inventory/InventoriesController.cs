@@ -19,7 +19,8 @@ public sealed class InventoriesController(
 {
     [HttpPost]
     [Authorize(Policy = "Authenticated")]
-    public async Task<IActionResult> CreateInventory([FromBody] CreateInventoryRequest request)
+    [Consumes("multipart/form-data")]
+    public async Task<IActionResult> CreateInventory([FromForm] CreateInventoryRequest request)
     {
         var ownerId = userManager.GetUserId(User)!;
         var dto = await inventoryService.CreateAsync(ownerId, request);
