@@ -4,6 +4,7 @@ using Inventory_Management_Platform.Data;
 using Inventory_Management_Platform.Data.Seeder;
 using Inventory_Management_Platform.Features.Admin;
 using Inventory_Management_Platform.Features.Auth;
+using Inventory_Management_Platform.Features.Inventory;
 using Inventory_Management_Platform.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.HttpOverrides;
@@ -115,6 +116,7 @@ builder.Services.AddSingleton<IAuthorizationMiddlewareResultHandler, Authorizati
 
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IAdminUserService, AdminUserService>();
+builder.Services.AddScoped<IInventoryService, InventoryService>();
 
 builder.Services.Configure<ForwardedHeadersOptions>(options =>
 {

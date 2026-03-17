@@ -27,6 +27,12 @@ public static class ErrorCodes
     // ── User ─────────────────────────────────────────────────────────────────
     public const string UserNotFound       = "user.not_found";
 
+    // ── Inventory ────────────────────────────────────────────────────────────
+    public const string InventoryNotFound       = "inventory.not_found";
+    public const string InventoryInvalidTitle   = "inventory.invalid_title";
+    public const string InventoryCategoryNotFound = "inventory.category_not_found";
+    public const string InventoryAccessUserNotFound = "inventory.access_user_not_found";
+
     // ── Admin ────────────────────────────────────────────────────────────────
     public const string CannotDeleteSelf   = "admin.cannot_delete_self";
 }
