@@ -303,6 +303,190 @@ Removes the target users from the `"Admin"` role. Self-demotion is explicitly al
 
 ---
 
+## Inventories (`/inventories`)
+
+Simple inventory CRUD for backend MVP. Custom ID functionality is intentionally excluded.
+
+### Architecture
+
+| Layer | File | Responsibility |
+|---|---|---|
+| Controller | `Features/Inventory/InventoriesController.cs` | HTTP binding, auth checks, resource-based authorization |
+| Service interface | `Features/Inventory/IInventoryService.cs` | Contract |
+| Service impl | `Features/Inventory/InventoryService.cs` | CRUD logic, tags, access list updates, optimistic locking |
+| DTOs | `Contracts/Inventory/*.cs` | Request/response contracts |
+
+---
+
+### `POST /inventories`
+
+Creates an inventory owned by the current user.
+
+**Auth policy:** `"Authenticated"`
+
+**Request body**
+```json
+{
+  "title": "Office Laptops",
+  "descriptionMd": "Markdown description",
+  "imageUrl": "https://example.com/image.png",
+  "categoryId": 1,
+  "isPublic": false,
+  "tagNames": ["hardware", "office"]
+}
+```
+
+**Success response:** `201 Created` with inventory DTO.
+
+**Error responses**
+
+| Condition | Status | `errorCode` |
+|---|---|---|
+| Empty title | 400 | `inventory.invalid_title` |
+| Unknown category | 400 | `inventory.category_not_found` |
+| Not authenticated | 401 | `auth.unauthorized` |
+| Blocked account | 403 | `auth.blocked` |
+
+---
+
+### `GET /inventories`
+
+Returns paginated inventories. Optional owner filter.
+
+**Auth policy:** none (anonymous)
+
+**Query parameters**
+
+| Name | Type | Default | Description |
+|---|---|---|---|
+| `ownerId` | `string?` | — | Return only inventories owned by this user |
+| `page` | `int` | `1` | 1-based page number |
+| `pageSize` | `int` | `20` | Clamped to `[1, 100]` |
+
+**Success response:** paged `InventoryDto[]` in `data.items`.
+
+---
+
+### `GET /inventories/{id}`
+
+Returns one inventory by ID.
+
+**Auth policy:** none (anonymous)
+
+**Error responses**
+
+| Condition | Status | `errorCode` |
+|---|---|---|
+| Inventory not found | 404 | `inventory.not_found` |
+
+---
+
+### `PUT /inventories/{id}/settings`
+
+Updates core settings and tags with optimistic locking.
+
+**Auth policy:** `"OwnerOrAdmin"` (resource-based)
+
+**Request body**
+```json
+{
+  "title": "Updated title",
+  "descriptionMd": "Updated markdown",
+  "imageUrl": "https://example.com/new-image.png",
+  "categoryId": 2,
+  "isPublic": true,
+  "tagNames": ["it", "asset"],
+  "version": 12345
+}
+```
+
+**Error responses**
+
+| Condition | Status | `errorCode` |
+|---|---|---|
+| Inventory not found | 404 | `inventory.not_found` |
+| Empty title | 400 | `inventory.invalid_title` |
+| Unknown category | 400 | `inventory.category_not_found` |
+| Stale version (optimistic lock) | 409 | `conflict.optimistic_lock` |
+| Not owner/admin | 403 | `auth.forbidden` |
+
+---
+
+### `POST /inventories/{id}/access/add`
+
+Adds write-access users by email. Requires optimistic-lock version.
+
+**Auth policy:** `"OwnerOrAdmin"` (resource-based)
+
+**Request body**
+```json
+{
+  "emails": ["user1@example.com", "user2@example.com"],
+  "version": 12345
+}
+```
+
+**Success response:** updated access email list and new `version`.
+
+**Error responses**
+
+| Condition | Status | `errorCode` |
+|---|---|---|
+| Inventory not found | 404 | `inventory.not_found` |
+| One or more emails not found | 404 | `inventory.access_user_not_found` |
+| Stale version (optimistic lock) | 409 | `conflict.optimistic_lock` |
+| Not owner/admin | 403 | `auth.forbidden` |
+
+---
+
+### `POST /inventories/{id}/access/remove`
+
+Removes write-access users by email. Requires optimistic-lock version.
+
+**Auth policy:** `"OwnerOrAdmin"` (resource-based)
+
+**Request body**
+```json
+{
+  "emails": ["user1@example.com"],
+  "version": 12345
+}
+```
+
+**Success response:** updated access email list and new `version`.
+
+**Error responses**
+
+| Condition | Status | `errorCode` |
+|---|---|---|
+| Inventory not found | 404 | `inventory.not_found` |
+| One or more emails not found | 404 | `inventory.access_user_not_found` |
+| Stale version (optimistic lock) | 409 | `conflict.optimistic_lock` |
+| Not owner/admin | 403 | `auth.forbidden` |
+
+---
+
+### `DELETE /inventories/{id}`
+
+Deletes an inventory (cascade rules handle dependents).
+
+**Auth policy:** `"OwnerOrAdmin"` (resource-based)
+
+**Success response**
+
+```json
+{ "success": true, "status": 200, "data": null }
+```
+
+**Error responses**
+
+| Condition | Status | `errorCode` |
+|---|---|---|
+| Inventory not found | 404 | `inventory.not_found` |
+| Not owner/admin | 403 | `auth.forbidden` |
+
+---
+
 ## Configuration reference
 
 | Key | Source | Description |
